@@ -128,8 +128,7 @@ Restic используется для резервного копировани
 ## 5. Описание файловой структуры проекта
 
 ```
-/projects/apps-service-opus/
-├── apps/
+apps/
 │   ├── _core/                              # Ядро платформы
 │   │   ├── caddy/                          # Конфигурация Caddy
 │   │   │   ├── docker-compose.yml           # Docker Compose для Caddy
