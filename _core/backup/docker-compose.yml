@@ -5,9 +5,10 @@ services:
     image: restic/restic:latest
     container_name: restic_backup
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       - RESTIC_REPOSITORY=/backups
-      - RESTIC_PASSWORD=changeit
     volumes:
       - ./restic-cache:/cache
       - ../../backups:/backups

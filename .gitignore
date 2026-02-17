@@ -133,3 +133,4 @@ _core/caddy/conf.d/*
 _core/caddy/data/*
 QWEN.md
 .qwen/PROJECT_SUMMARY.md
+services/*
