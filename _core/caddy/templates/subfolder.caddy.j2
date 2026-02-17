@@ -5,33 +5,43 @@
 {{ base_domain }} {
     import common_headers
     
+
     {% for service, route in services %}
     # Service: {{ service.name }} ({{ service.version }})
-    handle_path {{ route.path }}/* {
-        import logging {{ service.name }}
-        
+    import logging {{ service.name }} subfolder
+    @{{ service.name }} {
+        path {{ route.path }}/*
+        path /{{ service.name }}-assets/*
+    }
+
+    handle @{{ service.name }} {
+        @assets {
+            path /{{ service.name }}-assets/*
+        }
+
+        # Rewrite /{{ service.name }}-assets/* -> {{ route.path }}/{{ service.name }}-assets/*
+        rewrite @assets {{ route.path }}{uri}
+
         {% if service.visibility == 'internal' %}
         import internal_only
         {% endif %}
-        
-        reverse_proxy {{ service.name }}:{{ route.internal_port }} {
+
+        reverse_proxy host.docker.internal:{{ route.internal_port }} {
             {% if service.health.enabled %}
-            health_uri {{ service.health.endpoint }}
+            health_uri {{ service.health.endpoint | default('/healthz') }}
             health_interval {{ service.health.interval }}
             {% endif %}
-            
+
             header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
             header_up X-Service-Name {{ service.name }}
             {% if route.strip_prefix %}
             header_up X-Forwarded-Prefix {{ route.path }}
             {% endif %}
         }
     }
-    
+
     {% endfor %}
-    
+
     # Fallback
     handle {
         respond "Service not found" 404

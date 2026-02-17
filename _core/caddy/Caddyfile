@@ -16,7 +16,7 @@
         level DEBUG
     }
 }
-
+ 
 # Импорт глобальных сниппетов
 import /etc/caddy/snippets/*.caddy
 

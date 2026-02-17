@@ -22,23 +22,23 @@ routing:
   # Вариант 1: Отдельный домен
   - type: domain
     domain: myservice.example.com
-    
+
   # Вариант 2: Подпапка
   - type: subfolder
     base_domain: apps.example.com
     path: /my-service
     strip_prefix: true  # убирать prefix при проксировании
-    
+
   # Вариант 3: Порт (внутренний/тестовый)
   - type: port
     port: 8081
-    
-  # Внутренний порт контейнера (куда проксировать)
-  internal_port: 8000
-  
-  # Дополнительные заголовки
-  headers:
-    X-Service-Name: my-service
+
+# Внутренний порт контейнера (куда проксировать)
+internal_port: 8000
+
+# Дополнительные заголовки
+headers:
+  X-Service-Name: my-service
 
 # === HEALTH CHECK ===
 health:

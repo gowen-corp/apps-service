@@ -117,9 +117,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-run.sh
-_core/caddy/conf.d/apps-openedu-urfu-ru.caddy
-_core_alt/
 infra/
 .codeassistantmodes
 ops
@@ -131,3 +128,8 @@ _core/master/master.db
 .legacy/
 ai_summary.pdf
 manager.sh
+_core/caddy/config/*
+_core/caddy/conf.d/*
+_core/caddy/data/*
+QWEN.md
+.qwen/PROJECT_SUMMARY.md
