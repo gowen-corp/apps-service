@@ -134,3 +134,10 @@ _core/caddy/data/*
 QWEN.md
 .qwen/PROJECT_SUMMARY.md
 services/*
+
+# Platform CLI - изолированный проект
+_core/platform-cli/.venv/
+_core/platform-cli/venv/
+_core/platform-cli/dist/
+_core/platform-cli/build/
+_core/platform-cli/*.egg-info
