@@ -6,7 +6,7 @@ import asyncio
 
 from app.config import settings
 from app.core.security import KeycloakAuthProvider, BuiltInAuthProvider, set_auth_provider
-from app.services.discovery import ServiceDiscovery
+from app.services import ServiceDiscovery
 from app.services.health_checker import HealthChecker
 from app.services.caddy_manager import CaddyManager
 from app.services.notifier import TelegramNotifier
@@ -53,9 +53,12 @@ async def startup_tasks(app: FastAPI):
     app.state.discovery = ServiceDiscovery(settings.SERVICES_PATH)
     app.state.health_checker = HealthChecker()
     app.state.caddy = CaddyManager(settings.CADDY_CONFIG_PATH)
-    app.state.notifier = TelegramNotifier(settings.TELEGRAM_BOT_TOKEN, settings.TELEGRAM_CHAT_IDS)
-    app.state.docker = DockerManager(app.state.notifier)
-    app.state.backup = BackupManager(app.state.notifier)
+    app.state.notifier = TelegramNotifier(
+        bot_token=settings.TELEGRAM_BOT_TOKEN,
+        chat_ids=settings.TELEGRAM_CHAT_IDS
+    )
+    app.state.docker = DockerManager(notifier=app.state.notifier)
+    app.state.backup = BackupManager(notifier=app.state.notifier)
     app.state.log_manager = LogManager()
 
     # Первоначальная настройка
@@ -91,19 +94,28 @@ async def shutdown_tasks(app: FastAPI):
 # ──────────────────────────────────────────────
 
 app = FastAPI(
-    title="Platform Master Service",
-    version="1.0.0",
+    title=settings.PROJECT_NAME,
+    version=settings.PROJECT_VERSION,
     lifespan=lifespan,
 )
 
-# CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS — поддержка '*' через строку
+if settings.ALLOWED_ORIGINS == ["*"]:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.ALLOWED_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # Публичный маршрут
 @app.get("/healthz")
@@ -112,15 +124,17 @@ def health_check():
 
 
 # Подключение маршрутов API
-for router_info in [
+routers = [
     (services.router, "/api/services", ["services"]),
     (deployments.router, "/api/deployments", ["deployments"]),
     (logs.router, "/api/logs", ["logs"]),
     (backups.router, "/api/backups", ["backups"]),
     (health.router, "/api/health", ["health"]),
     (users.router, "/api/users", ["users"]),
-]:
-    app.include_router(router_info[0], prefix=router_info[1], tags=router_info[2])
+]
+
+for router, prefix, tags in routers:
+    app.include_router(router, prefix=prefix, tags=tags)
 
 
 # ──────────────────────────────────────────────
@@ -171,6 +185,17 @@ async def backup_schedule_loop(app: FastAPI):
 # NICEGUI UI
 # ──────────────────────────────────────────────
 
+# Применяем единую тему
+from app.ui.theme import apply_theme
+apply_theme()
+
+# Подавляем известный баг NiceGUI с prune_user_storage
+import logging
+logging.getLogger('nicegui.nicegui').addFilter(
+    lambda record: 'Request is not set' not in record.getMessage()
+)
+
+
 @ui.page("/")
 async def main_page():
     from app.ui.main_page import render_main_page
@@ -200,6 +225,6 @@ ui.run_with(
     app,
     title="Platform Manager",
     favicon="🚀",
-    dark=True,
-    # socket_io_js_query_params={"path": "/socket.io/"},
+    dark=False,  # Светлая тема для более чистого вида
+    storage_secret=settings.SECRET_KEY,
 )

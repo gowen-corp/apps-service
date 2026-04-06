@@ -1,103 +1,171 @@
+"""Компонент карточки сервиса."""
 from nicegui import ui
-from typing import List
+from typing import Optional, Callable
 from app.services.discovery import ServiceManifest
 
 
-def create_service_card(service: ServiceManifest) -> ui.card:
-    """Создание карточки сервиса"""
-    with ui.card().classes('w-full') as card:
-        # Заголовок карточки
-        with ui.row().classes('w-full items-center'):
-            status_icon = {
-                'running': '🟢',
-                'stopped': '🔴',
-                'partial': '🟡',
-                'unknown': '⚪'
-            }.get(service.status, '⚪')
+class ServiceCard(ui.card):
+    """Карточка сервиса для отображения в списке."""
+
+    def __init__(self, service: ServiceManifest,
+                 on_view: Optional[Callable] = None,
+                 on_deploy: Optional[Callable] = None,
+                 on_restart: Optional[Callable] = None,
+                 on_stop: Optional[Callable] = None):
+        """Инициализация карточки сервиса.
+        
+        Args:
+            service: Объект сервиса
+            on_view: Callback для просмотра деталей
+            on_deploy: Callback для деплоя
+            on_restart: Callback для перезапуска
+            on_stop: Callback для остановки
+        """
+        super().__init__()
+        
+        self._service = service
+        self._on_view = on_view
+        self._on_deploy = on_deploy
+        self._on_restart = on_restart
+        self._on_stop = on_stop
+        
+        self._props['flat'] = True
+        self._props['bordered'] = True
+        self.classes('w-full p-4')
+        
+        self._render()
+
+    def _render(self):
+        """Рендер содержимого карточки."""
+        with self:
+            with ui.row().classes('w-full items-center gap-4'):
+                # Индикатор статуса
+                self._render_status_indicator()
+                
+                # Основная информация
+                self._render_info()
+                
+                # Видимость
+                self._render_visibility_chip()
+                
+                # Кнопки действий
+                self._render_actions()
+
+    def _render_status_indicator(self):
+        """Рендер индикатора статуса."""
+        status_config = {
+            'running': {'icon': 'play_circle', 'color': 'positive'},
+            'stopped': {'icon': 'stop_circle', 'color': 'negative'},
+            'partial': {'icon': 'remove_circle', 'color': 'warning'},
+            'unknown': {'icon': 'help_circle', 'color': 'grey'},
+        }
+        
+        config = status_config.get(self._service.status, status_config['unknown'])
+        
+        with ui.column().classes('items-center w-10'):
+            ui.icon(config['icon']).classes(f'text-2xl text-{config["color"]}')
+
+    def _render_info(self):
+        """Рендер основной информации."""
+        with ui.column().classes('flex-1'):
+            # Название
+            name = self._service.display_name or self._service.name
+            ui.label(name).classes('text-subtitle1 font-medium')
             
-            ui.label(f"{status_icon} {service.display_name or service.name}").classes('text-h6')
-            ui.space()
+            # Маршруты
+            routing = self._format_routing()
+            if routing:
+                ui.label(routing).classes('text-caption text-grey-7')
             
-            # Теги видимости и типа
-            ui.chip(f"{service.visibility}", icon='visibility').classes(
-                'bg-green' if service.visibility == 'public' else 'bg-blue'
-            )
-            ui.chip(f"{service.type}", icon='category').classes('bg-purple')
-        
-        # Описание
-        if service.description:
-            ui.label(service.description).classes('text-subtitle2')
-        
-        # Версия
-        ui.label(f"Version: {service.version}").classes('text-caption')
-        
-        # Маршрутизация
-        routing_info = []
-        for route in service.routing:
-            if route.type == 'domain':
-                routing_info.append(f"🌐 {route.domain}")
-            elif route.type == 'subfolder':
-                routing_info.append(f"📁 {route.base_domain}{route.path}")
-            elif route.type == 'port':
-                routing_info.append(f"🔌 :{route.port}")
-        
-        if routing_info:
-            ui.label("Routing: " + " | ".join(routing_info)).classes('text-caption')
-        
-        # Кнопки действий
-        with ui.row().classes('w-full justify-end'):
-            ui.button('View', icon='visibility', 
-                     on_click=lambda: ui.navigate.to(f'/services/{service.name}')).classes('mr-2')
+            # Версия
+            if self._service.version:
+                ui.label(f'v{self._service.version}').classes('text-xs text-grey-5')
+
+    def _render_visibility_chip(self):
+        """Рендер метки видимости."""
+        is_public = self._service.visibility == 'public'
+        chip = ui.chip(
+            'Публичный' if is_public else 'Внутренний',
+            icon='public' if is_public else 'lock'
+        )
+        chip.props(f'color={"info" if is_public else "secondary"}')
+
+    def _render_actions(self):
+        """Рендер кнопок действий."""
+        with ui.row().classes('gap-1'):
+            # Просмотр
+            ui.button(
+                icon='visibility',
+                on_click=lambda: self._on_view(self._service) if self._on_view else None
+            ).props('flat dense round').tooltip('Просмотр')
             
-            if service.status in ['stopped', 'unknown']:
-                ui.button('Deploy', icon='play_arrow', 
-                         on_click=lambda: handle_deploy(service.name)).classes('mr-2')
+            # Перезапуск
+            ui.button(
+                icon='refresh',
+                on_click=lambda: self._on_restart(self._service) if self._on_restart else None
+            ).props('flat dense round').tooltip('Перезапустить')
+            
+            # Старт/Стоп
+            if self._service.status == 'running':
+                ui.button(
+                    icon='stop_circle',
+                    on_click=lambda: self._on_stop(self._service) if self._on_stop else None
+                ).props('flat dense round').classes('text-negative').tooltip('Остановить')
             else:
-                ui.button('Restart', icon='restart_alt', 
-                         on_click=lambda: handle_restart(service.name)).classes('mr-2')
-                ui.button('Stop', icon='stop', 
-                         on_click=lambda: handle_stop(service.name)).classes('mr-2')
+                ui.button(
+                    icon='play_circle',
+                    on_click=lambda: self._on_deploy(self._service) if self._on_deploy else None
+                ).props('flat dense round').classes('text-positive').tooltip('Запустить')
+
+    def _format_routing(self) -> str:
+        """Форматирование информации о маршрутизации."""
+        if not self._service.routing:
+            return ''
+        
+        parts = []
+        for route in self._service.routing:
+            if route.type == 'domain':
+                parts.append(route.domain)
+            elif route.type == 'subfolder':
+                parts.append(f'{route.base_domain}{route.path}')
+            elif route.type == 'port':
+                parts.append(f':{route.port}')
+        
+        return ' • '.join(parts) if parts else ''
+
+    def update_status(self, status: str):
+        """Обновление статуса сервиса.
+        
+        Args:
+            status: Новый статус
+        """
+        self._service.status = status
+        # Перерисовка карточки
+        self.clear()
+        self._render()
+
+
+def create_service_card(service: ServiceManifest,
+                        on_view: Optional[Callable] = None,
+                        on_deploy: Optional[Callable] = None,
+                        on_restart: Optional[Callable] = None,
+                        on_stop: Optional[Callable] = None) -> ServiceCard:
+    """Фабричная функция для создания карточки сервиса.
     
-    return card
-
-
-async def handle_deploy(service_name: str):
-    """Обработка деплоя"""
-    from app.main import app
-    
-    service = app.state.discovery.get_service(service_name)
-    if service:
-        ui.notify(f'Deploying {service_name}...', type='info')
-        result = await app.state.docker.deploy_service(service)
-        if result['success']:
-            ui.notify(f'{service_name} deployed', type='positive')
-        else:
-            ui.notify(f'Deploy failed: {result["message"]}', type='negative')
-
-
-async def handle_restart(service_name: str):
-    """Обработка перезапуска"""
-    from app.main import app
-    
-    service = app.state.discovery.get_service(service_name)
-    if service:
-        ui.notify(f'Restarting {service_name}...', type='info')
-        result = await app.state.docker.restart_service(service)
-        if result['success']:
-            ui.notify(f'{service_name} restarted', type='positive')
-        else:
-            ui.notify(f'Restart failed: {result["message"]}', type='negative')
-
-
-async def handle_stop(service_name: str):
-    """Обработка остановки"""
-    from app.main import app
-    
-    service = app.state.discovery.get_service(service_name)
-    if service:
-        ui.notify(f'Stopping {service_name}...', type='info')
-        result = await app.state.docker.stop_service(service)
-        if result['success']:
-            ui.notify(f'{service_name} stopped', type='positive')
-        else:
-            ui.notify(f'Stop failed: {result["message"]}', type='negative')
+    Args:
+        service: Объект сервиса
+        on_view: Callback для просмотра
+        on_deploy: Callback для деплоя
+        on_restart: Callback для перезапуска
+        on_stop: Callback для остановки
+        
+    Returns:
+        Экземпляр ServiceCard
+    """
+    return ServiceCard(
+        service=service,
+        on_view=on_view,
+        on_deploy=on_deploy,
+        on_restart=on_restart,
+        on_stop=on_stop
+    )

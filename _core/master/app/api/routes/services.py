@@ -3,8 +3,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 from app.core.security import get_current_user
-from app.services.discovery import ServiceManifest
-from app.services.discovery import ServiceDiscovery
+from app.services.discovery import ServiceManifest, ServiceDiscovery
 
 router = APIRouter()
 

@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional, List
 import enum
 
-from app.core.database import BaseModel
+from app.models.base import BaseModel
 
 
 class ServiceType(str, enum.Enum):

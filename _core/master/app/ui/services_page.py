@@ -1,148 +1,230 @@
+"""Страница управления сервисами."""
 from nicegui import ui
-from datetime import datetime
-from typing import List
+from typing import List, Optional
 
-from app.services.discovery import ServiceManifest
+from app.ui.components.base import (
+    create_header,
+    create_icon_button,
+    create_empty_state,
+)
+
+
+class ServicesPage:
+    """Класс страницы управления сервисами."""
+
+    def __init__(self):
+        self.services: List = []
+        self.filtered_services: List = []
+        self.table: Optional[ui.table] = None
+        self.search_input: Optional[ui.input] = None
+        self.visibility_filter: Optional[ui.select] = None
+        self.status_filter: Optional[ui.select] = None
+
+    async def render(self):
+        """Рендер страницы сервисов."""
+        from app.main import app
+
+        self.services = list(app.state.discovery.services.values())
+        self.filtered_services = self.services.copy()
+
+        # Заголовок
+        create_header(title='Сервисы', show_refresh=True)
+
+        # Фильтры
+        with ui.row().classes('w-full px-6 gap-4 mt-4 items-end'):
+            with ui.column().classes('flex-1'):
+                self.search_input = ui.input(label='Поиск', placeholder='Название или описание') \
+                    .props('outlined dense').classes('min-w-[200px]')
+            with ui.column():
+                self.visibility_filter = ui.select(
+                    options=['all', 'public', 'internal'],
+                    value='all',
+                    label='Видимость',
+                    on_change=lambda _: self._apply_filters()
+                ).props('outlined dense')
+            with ui.column():
+                self.status_filter = ui.select(
+                    options=['all', 'running', 'stopped', 'partial'],
+                    value='all',
+                    label='Статус',
+                    on_change=lambda _: self._apply_filters()
+                ).props('outlined dense')
+            ui.button('Применить', icon='filter_list', on_click=self._apply_filters) \
+                .props('unelevated')
+
+        # Таблица сервисов
+        await self._render_table()
+
+    async def _render_table(self):
+        """Рендер таблицы сервисов."""
+        columns = [
+            {'name': 'status', 'label': '', 'field': 'status', 'align': 'center', 'style': 'width: 50px'},
+            {'name': 'name', 'label': 'Название', 'field': 'name', 'align': 'left'},
+            {'name': 'version', 'label': 'Версия', 'field': 'version', 'align': 'center', 'style': 'width: 100px'},
+            {'name': 'visibility', 'label': 'Видимость', 'field': 'visibility', 'align': 'center', 'style': 'width: 100px'},
+            {'name': 'routing', 'label': 'Маршруты', 'field': 'routing', 'align': 'left'},
+            {'name': 'actions', 'label': 'Действия', 'field': 'actions', 'align': 'center', 'style': 'width: 150px'},
+        ]
+
+        rows = self._build_table_rows(self.filtered_services)
+
+        self.table = ui.table(
+            columns=columns,
+            rows=rows,
+            row_key='name'
+        ).classes('w-full px-6 mt-4').props('flat bordered')
+
+        self._add_action_slots()
+        self._add_table_events()
+
+        # Показываем empty state если нет данных
+        if not rows:
+            self.table.clear()
+            with self.table:
+                create_empty_state('📭', 'Нет сервисов для отображения')
+
+    def _build_table_rows(self, services: List) -> List[dict]:
+        """Построение строк таблицы."""
+        rows = []
+        for service in services:
+            rows.append({
+                'name': service.display_name or service.name,
+                'version': service.version or '—',
+                'visibility': service.visibility,
+                'routing': self._format_routing(service.routing),
+                'service_name': service.name,
+                'status': service.status,
+            })
+        return rows
+
+    def _format_routing(self, routing) -> str:
+        """Форматирование маршрутов."""
+        if not routing:
+            return '—'
+        
+        parts = []
+        for route in routing:
+            if route.type == 'domain':
+                parts.append(f"🌐 {route.domain}")
+            elif route.type == 'subfolder':
+                parts.append(f"📁 {route.base_domain}{route.path}")
+            elif route.type == 'port':
+                parts.append(f"🔌 :{route.port}")
+        
+        return ' | '.join(parts) if parts else '—'
+
+    def _add_action_slots(self):
+        """Добавление слотов для кнопок действий."""
+        self.table.add_slot('body-cell-status', '''
+            <q-td :props="props">
+                <q-badge :color="props.row.status === 'running' ? 'positive' : 
+                               props.row.status === 'stopped' ? 'negative' : 
+                               props.row.status === 'partial' ? 'warning' : 'grey'">
+                    {{ props.row.status === 'running' ? '●' : 
+                       props.row.status === 'stopped' ? '●' : 
+                       props.row.status === 'partial' ? '●' : '●' }}
+                </q-badge>
+            </q-td>
+        ''')
+
+        self.table.add_slot('body-cell-visibility', '''
+            <q-td :props="props">
+                <q-badge outline :color="props.row.visibility === 'public' ? 'info' : 'secondary'">
+                    {{ props.row.visibility === 'public' ? '🌍 Публичный' : '🔒 Внутренний' }}
+                </q-badge>
+            </q-td>
+        ''')
+
+        self.table.add_slot('body-cell-actions', '''
+            <q-td :props="props">
+                <div class="row q-gutter-xs justify-center">
+                    <q-btn flat dense round icon="visibility" 
+                           @click="$parent.$emit('view', props.row)" 
+                           color="primary" />
+                    <q-btn flat dense round icon="refresh" 
+                           @click="$parent.$emit('restart', props.row)" />
+                    <q-btn flat dense round :icon="props.row.status === 'running' ? 'stop' : 'play_arrow'" 
+                           @click="$parent.$emit('toggle', props.row)" 
+                           :color="props.row.status === 'running' ? 'negative' : 'positive'" />
+                </div>
+            </q-td>
+        ''')
+
+    def _add_table_events(self):
+        """Добавление обработчиков событий таблицы."""
+        self.table.on('view', lambda e: ui.navigate.to(f'/services/{e.args["service_name"]}'))
+        self.table.on('restart', lambda e: self._handle_action(e.args["service_name"], 'restart'))
+        self.table.on('toggle', lambda e: self._handle_toggle(e.args))
+
+    def _handle_toggle(self, args: dict):
+        """Обработка кнопки запуска/остановки."""
+        service_name = args["service_name"]
+        status = args.get("status", "unknown")
+        action = 'deploy' if status != 'running' else 'stop'
+        self._handle_action(service_name, action)
+
+    def _apply_filters(self):
+        """Применение фильтров."""
+        search = (self.search_input.value or '').lower() if self.search_input else ''
+        visibility = self.visibility_filter.value if self.visibility_filter else 'all'
+        status = self.status_filter.value if self.status_filter else 'all'
+
+        filtered = self.services
+
+        # Поиск по названию
+        if search:
+            filtered = [s for s in filtered 
+                       if search in s.name.lower() 
+                       or (s.display_name and search in s.display_name.lower())]
+
+        # Фильтр по видимости
+        if visibility != 'all':
+            filtered = [s for s in filtered if s.visibility == visibility]
+
+        # Фильтр по статусу
+        if status != 'all':
+            filtered = [s for s in filtered if s.status == status]
+
+        self.filtered_services = filtered
+        self._update_table()
+
+    def _update_table(self):
+        """Обновление таблицы."""
+        if self.table:
+            self.table.rows = self._build_table_rows(self.filtered_services)
+            self.table.update()
+
+    async def _handle_action(self, service_name: str, action: str):
+        """Обработка действий с сервисом."""
+        from app.main import app
+
+        service = app.state.discovery.get_service(service_name)
+        if not service:
+            ui.notify(f'Сервис {service_name} не найден', type='negative')
+            return
+
+        actions = {
+            'deploy': ('Запуск', app.state.docker.deploy_service),
+            'restart': ('Перезапуск', app.state.docker.restart_service),
+            'stop': ('Остановка', app.state.docker.stop_service),
+        }
+
+        action_label, action_func = actions.get(action, ('Действие', None))
+        if not action_func:
+            return
+
+        ui.notify(f'{action_label} {service_name}...', type='info')
+        result = await action_func(service)
+
+        if result.get('success'):
+            ui.notify(f'{service_name}: {action_label.lower()} успешно', type='positive')
+            ui.navigate.reload()
+        else:
+            msg = result.get('message', 'Неизвестная ошибка')
+            ui.notify(f'Ошибка: {msg}', type='negative')
 
 
 async def render_services_page():
-    """Рендер страницы управления сервисами"""
-    from app.main import app
-    
-    # Заголовок
-    with ui.row().classes('w-full items-center'):
-        ui.label('Services').classes('text-h4')
-        ui.space()
-        ui.button('Refresh', on_click=lambda: ui.navigate.reload()).classes('ml-auto')
-    
-    # Получаем список сервисов
-    services = list(app.state.discovery.services.values())
-    
-    # Фильтры
-    with ui.row().classes('w-full items-center'):
-        search_input = ui.input('Search').classes('mr-2')
-        visibility_select = ui.select(
-            options=['all', 'public', 'internal'], 
-            value='all',
-            label='Visibility'
-        ).classes('mr-2')
-        
-        ui.button('Apply Filters', on_click=lambda: apply_filters(
-            search_input.value, 
-            visibility_select.value
-        ))
-    
-    # Таблица сервисов
-    await render_services_table(services)
-
-
-async def apply_filters(search: str, visibility: str):
-    """Применение фильтров к списку сервисов"""
-    from app.main import app
-    
-    services = list(app.state.discovery.services.values())
-    
-    # Применяем фильтры
-    if search:
-        services = [s for s in services if search.lower() in s.name.lower() or 
-                   (s.display_name and search.lower() in s.display_name.lower())]
-    
-    if visibility != 'all':
-        services = [s for s in services if s.visibility == visibility]
-    
-    # Обновляем таблицу
-    # В реальной реализации здесь будет обновление таблицы
-    ui.notify(f'Filtered to {len(services)} services')
-
-
-async def render_services_table(services: List[ServiceManifest]):
-    """Рендер таблицы сервисов"""
-    columns = [
-        {'name': 'status', 'label': '', 'field': 'status', 'align': 'center'},
-        {'name': 'name', 'label': 'Name', 'field': 'name'},
-        {'name': 'version', 'label': 'Version', 'field': 'version'},
-        {'name': 'visibility', 'label': 'Visibility', 'field': 'visibility'},
-        {'name': 'type', 'label': 'Type', 'field': 'type'},
-        {'name': 'actions', 'label': 'Actions', 'field': 'actions'},
-    ]
-    
-    rows = []
-    for service in services:
-        status_icon = {
-            'running': '🟢',
-            'stopped': '🔴',
-            'partial': '🟡',
-            'unknown': '⚪'
-        }.get(service.status, '⚪')
-        
-        rows.append({
-            'status': status_icon,
-            'name': service.display_name or service.name,
-            'version': service.version,
-            'visibility': '🌍' if service.visibility == 'public' else '🔒',
-            'type': service.type,
-            'service_name': service.name
-        })
-    
-    table = ui.table(columns=columns, rows=rows, row_key='name').classes('w-full')
-    
-    # Кастомные слоты для actions
-    table.add_slot('body-cell-actions', '''
-        <q-td :props="props">
-            <q-btn flat dense icon="visibility" 
-                   @click="$parent.$emit('view', props.row)" />
-            <q-btn flat dense icon="play_arrow" 
-                   @click="$parent.$emit('deploy', props.row)" />
-            <q-btn flat dense icon="restart_alt" 
-                   @click="$parent.$emit('restart', props.row)" />
-            <q-btn flat dense icon="stop" color="negative"
-                   @click="$parent.$emit('stop', props.row)" />
-        </q-td>
-    ''')
-    
-    table.on('view', lambda e: ui.navigate.to(f'/services/{e.args["service_name"]}'))
-    table.on('deploy', lambda e: handle_deploy(e.args["service_name"]))
-    table.on('restart', lambda e: handle_restart(e.args["service_name"]))
-    table.on('stop', lambda e: handle_stop(e.args["service_name"]))
-
-
-async def handle_deploy(service_name: str):
-    """Обработка деплоя"""
-    from app.main import app
-    
-    service = app.state.discovery.get_service(service_name)
-    if service:
-        ui.notify(f'Deploying {service_name}...', type='info')
-        result = await app.state.docker.deploy_service(service)
-        if result['success']:
-            ui.notify(f'{service_name} deployed', type='positive')
-        else:
-            ui.notify(f'Deploy failed: {result["message"]}', type='negative')
-
-
-async def handle_restart(service_name: str):
-    """Обработка перезапуска"""
-    from app.main import app
-    
-    service = app.state.discovery.get_service(service_name)
-    if service:
-        ui.notify(f'Restarting {service_name}...', type='info')
-        result = await app.state.docker.restart_service(service)
-        if result['success']:
-            ui.notify(f'{service_name} restarted', type='positive')
-        else:
-            ui.notify(f'Restart failed: {result["message"]}', type='negative')
-
-
-async def handle_stop(service_name: str):
-    """Обработка остановки"""
-    from app.main import app
-    
-    service = app.state.discovery.get_service(service_name)
-    if service:
-        ui.notify(f'Stopping {service_name}...', type='info')
-        result = await app.state.docker.stop_service(service)
-        if result['success']:
-            ui.notify(f'{service_name} stopped', type='positive')
-        else:
-            ui.notify(f'Stop failed: {result["message"]}', type='negative')
+    """Рендер страницы сервисов."""
+    page = ServicesPage()
+    await page.render()
