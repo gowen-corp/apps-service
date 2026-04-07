@@ -1,5 +1,5 @@
 (logging) {
-    log {
+    log {args[0]}_{args[1]} {
         output file /var/log/caddy/services/{args[0]}.log
         format json
     }

@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from typing import Optional
 
-from app.core.database import BaseModel
+from app.models.base import BaseModel
 
 
 class Deployment(BaseModel):

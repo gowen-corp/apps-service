@@ -10,7 +10,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "🚀 Ops Manager Installation"
 echo "=========================="
-
+echo ""
+echo "Установка включает:"
+echo "  • ops — базовая CLI утилита (обязательно)"
+echo "  • platform — расширенная CLI утилита (опционально)"
 echo ""
 echo "📍 Found project at: $SCRIPT_DIR"
 echo ""
@@ -86,6 +89,22 @@ case "$INSTALL_CHOICE" in
 esac
 
 mkdir -p "$TARGET" 2>/dev/null || true
+
+# --- Ask about Platform CLI installation ---
+echo ""
+echo "📦 Platform CLI — расширенная CLI утилита с дополнительными возможностями:"
+echo "   • platform new — создание сервисов из шаблона"
+echo "   • platform deploy — деплой с опциями --build/--pull"
+echo "   • platform status/logs/backup — расширенное управление"
+echo "   • Устанавливается через pipx (изолированно)"
+echo ""
+read -rp "Install Platform CLI? [Y/n]: " INSTALL_PLATFORM
+INSTALL_PLATFORM="${INSTALL_PLATFORM:-Y}"
+
+INSTALL_PLATFORM_CLI=false
+if [[ "$INSTALL_PLATFORM" =~ ^[yY] ]]; then
+    INSTALL_PLATFORM_CLI=true
+fi
 
 # --- Create config ---
 log "Creating config at $CONFIG_FILE..."
@@ -303,6 +322,61 @@ OPS_EOF
 
 chmod +x "$OPS_SCRIPT"
 
+# --- Install platform CLI script (опционально) ---
+if [[ "$INSTALL_PLATFORM_CLI" == "true" ]]; then
+    log "Installing platform CLI to $TARGET..."
+
+    PLATFORM_SCRIPT="$TARGET/platform"
+    PLATFORM_CLI_DIR="$PROJECT_ROOT/_core/platform-cli"
+
+    cat > "$PLATFORM_SCRIPT" << 'PLATFORM_EOF'
+#!/bin/bash
+# Platform CLI wrapper - запускает platform через pipx или напрямую
+
+# PROJECT_ROOT подставляется при установке
+PROJECT_ROOT="__PROJECT_ROOT__"
+
+# Проверка наличия platform (pipx installation)
+if command -v platform &> /dev/null; then
+    exec platform "$@"
+fi
+
+# Fallback: запуск через pipx install
+PLATFORM_CLI_DIR="$PROJECT_ROOT/_core/platform-cli"
+
+if [[ -d "$PLATFORM_CLI_DIR" ]]; then
+    # Проверка pipx
+    if command -v pipx &> /dev/null; then
+        echo "⚠️  Установка platform-cli через pipx..."
+        pipx install "$PLATFORM_CLI_DIR" && platform "$@"
+        exit $?
+    fi
+
+    # Fallback: прямой запуск через Python
+    if command -v python3 &> /dev/null; then
+        cd "$PLATFORM_CLI_DIR" && python3 -m platform.cli "$@"
+        exit $?
+    fi
+fi
+
+echo "❌ platform CLI не найден. Установите:"
+echo "   pipx install $PROJECT_ROOT/_core/platform-cli"
+echo "   или: cd $PROJECT_ROOT/_core/platform-cli && ./install.sh"
+exit 1
+PLATFORM_EOF
+
+    # Подставляем реальный PROJECT_ROOT
+    sed -i "s|__PROJECT_ROOT__|$PROJECT_ROOT|g" "$PLATFORM_SCRIPT"
+
+    chmod +x "$PLATFORM_SCRIPT"
+    ok "Platform CLI wrapper установлен в $PLATFORM_SCRIPT"
+else
+    echo ""
+    warn "Platform CLI не установлен"
+    echo "   Для установки позже: pipx install $PROJECT_ROOT/_core/platform-cli"
+    echo "   или: cd $PROJECT_ROOT/_core/platform-cli && ./install.sh"
+fi
+
 # Add to PATH hint
 if [[ "$TARGET" == "$HOME/bin" && ":$PATH:" != *":$HOME/bin:"* ]]; then
     echo ""
@@ -314,9 +388,13 @@ echo ""
 ok "Installation complete!"
 echo ""
 echo "Quick start:"
-echo "  ops list          # Show all services"
-echo "  ops up master     # Start master"
-echo "  ops ui            # Lazydocker for all"
+echo "  ops list              # Show all services (bash wrapper)"
+if [[ "$INSTALL_PLATFORM_CLI" == "true" ]]; then
+    echo "  platform list         # Full CLI with all features"
+    echo "  platform new myapp    # Create new service"
+    echo "  platform deploy myapp # Deploy service"
+fi
+echo "  ops ui                # Lazydocker for all"
 echo ""
 echo "Config: $CONFIG_FILE"
 echo "Root:   $PROJECT_ROOT"

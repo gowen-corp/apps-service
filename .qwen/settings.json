@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(git commit *)",
+      "Bash(git checkout *)",
+      "Bash(sed *)",
+      "Bash(python3 *)",
+      "Bash(git add *)"
+    ]
+  },
+  "$version": 3
+}

@@ -1,75 +1,72 @@
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Boolean
+
+from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from datetime import datetime
-from typing import Optional
+from sqlalchemy.orm import sessionmaker, Session
+from typing import Generator
 import logging
 
 from app.config import settings
 
-# Настройка логирования
 logger = logging.getLogger(__name__)
 
-# Создание движка базы данных
-engine = create_engine(settings.DATABASE_URL, connect_args={"check_same_thread": False})
+# Создание движка с оптимизациями под SQLite (если используется)
+engine = create_engine(
+    settings.DATABASE_URL,
+    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {},
+    echo=False,  # Включить для отладки SQL-запросов
+    pool_pre_ping=True,  # Проверка соединения перед использованием
+)
 
-# Создание базового класса для моделей
-Base = declarative_base()
+_base = None
 
-# Создание сессии
+def get_base():
+    global _base
+    if _base is None:
+        _base = declarative_base()
+    return _base
+
+Base = get_base()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class DatabaseManager:
-    """Менеджер базы данных"""
-    
+    """Менеджер базы данных с улучшенной обработкой ошибок и логированием."""
+
     def __init__(self):
         self.engine = engine
         self.SessionLocal = SessionLocal
-        self.Base = Base
-    
-    def create_tables(self):
-        """Создание всех таблиц"""
+        self.Base = get_base()  # Используем функцию для получения базы
+
+    def create_tables(self) -> None:
+        """Создаёт все таблицы, если они ещё не существуют."""
         try:
-            # Создание всех таблиц
             self.Base.metadata.create_all(bind=self.engine)
-            logger.info("Database tables created successfully")
+            logger.info("Таблицы базы данных успешно созданы или уже существуют.")
         except Exception as e:
-            logger.error(f"Error creating database tables: {e}")
+            logger.error(f"Ошибка при создании таблиц: {e}")
             raise
-    
-    def get_db(self):
-        """Получение сессии базы данных"""
+
+    def get_db(self) -> Generator[Session, None, None]:
+        """Генератор сессии базы данных для использования в FastAPI."""
         db = self.SessionLocal()
         try:
             yield db
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Ошибка в транзакции БД: {e}")
+            raise
         finally:
             db.close()
 
 
-# Глобальный экземпляр менеджера базы данных
 db_manager = DatabaseManager()
 
 
-# Базовая модель с общими полями
-class BaseModel(Base):
-    __abstract__ = True
-    
-    id = Column(Integer, primary_key=True, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    is_active = Column(Boolean, default=True)
+# Зависимость для внедрения сессии БД
+def get_db() -> Generator[Session, None, None]:
+    """Зависимость FastAPI для получения сессии базы данных."""
+    yield from db_manager.get_db()
 
 
-# Импорт моделей для создания таблиц
-from app.models import user
-
-
-# Зависимость для получения сессии базы данных
-def get_db():
-    """Зависимость FastAPI для получения сессии базы данных"""
-    db = db_manager.SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# Отложенная загрузка моделей — чтобы Base была доступна
+# init_models() больше не нужна, так как модели инициализируются через get_base() при определении классов.
