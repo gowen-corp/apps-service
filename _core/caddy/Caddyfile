@@ -1,6 +1,7 @@
 {
     email admin@urfu.online
     admin 0.0.0.0:2019
+    auto_https disable_redirects
 
     # Access log (по умолчанию)
     log {
