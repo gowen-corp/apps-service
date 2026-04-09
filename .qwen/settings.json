@@ -32,7 +32,15 @@
       "Bash(eof)",
       "Bash(docker *)",
       "Bash(docker compose version)",
-      "Bash(docker network *)"
+      "Bash(docker network *)",
+      "Bash(ss *)",
+      "Bash(./restart_core.sh)",
+      "Bash(true)",
+      "Bash(cat *)",
+      "Bash(git show *)",
+      "Bash(git *)",
+      "Bash(which *)",
+      "Bash(ops *)"
     ]
   },
   "$version": 3
