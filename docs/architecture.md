@@ -268,7 +268,7 @@ install.sh                       # Скрипт установки
 - Просматривать логи: `ops logs nginx`
 - Перезагружать Caddy: `ops reload`
 
-Более подробно — см. [Setup Guide](../setup.md).
+Более подробно — см. [Установка](getting-started/install.md).
 
 ### Визуальный мониторинг с `lazydocker`
 

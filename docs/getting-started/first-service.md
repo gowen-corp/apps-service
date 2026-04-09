@@ -1,0 +1,108 @@
+# Первый сервис
+
+Сервис в платформе — это директория с двумя файлами: `service.yml` (манифест) и `docker-compose.yml`.
+
+## Быстрый способ
+
+```bash
+platform new my-app public
+```
+
+Создаст структуру в `services/public/my-app/`:
+
+```
+services/public/my-app/
+├── service.yml          # Манифест: имя, роутинг, health, backup
+├── docker-compose.yml   # Docker-контейнеры сервиса
+├── .env.example         # Пример переменных окружения
+└── README.md            # Документация сервиса
+```
+
+## Ручной способ
+
+Создайте `services/public/my-app/service.yml`:
+
+```yaml
+name: my-app
+display_name: "Моё приложение"
+version: "1.0.0"
+description: "Мой первый сервис на платформе"
+type: docker-compose
+visibility: public
+
+routing:
+  - type: domain
+    domain: myapp.example.com
+    internal_port: 80
+    container_name: my-app
+
+health:
+  enabled: true
+  endpoint: /
+  interval: 30s
+  timeout: 10s
+  retries: 3
+
+backup:
+  enabled: false
+```
+
+И `services/public/my-app/docker-compose.yml`:
+
+```yaml
+version: '3.8'
+
+services:
+  my-app:
+    image: nginx:alpine
+    container_name: my-app
+    networks:
+      - platform_network
+
+networks:
+  platform_network:
+    external: true
+    name: platform_network
+```
+
+## Деплой
+
+```bash
+# Перезапустить core (если первый раз)
+./restart_core.sh --build
+
+# Запустить сервис
+ops up my-app
+
+# Проверить
+ops list
+```
+
+Сервис появится:
+- ✅ В UI Master Service (`http://localhost:8001`)
+- ✅ В роутинге Caddy (автогенерация из `service.yml`)
+- ✅ В health check мониторинге (каждые 30s)
+
+## Local override
+
+Хотите поменять настройки только для локальной разработки, не трогая основной `service.yml`?
+
+Создайте `services/public/my-app/service.local.yml`:
+
+```yaml
+routing:
+  - type: port
+    internal_port: 80
+    port: 9090
+
+health:
+  interval: 10s
+```
+
+Платформа автоматически смержит `service.local.yml` поверх `service.yml`. Файл в `.gitignore` — не попадёт в коммит.
+
+## Что дальше
+
+- [Управление сервисами](../user-guide/services.md) — все команды CLI
+- [Типы роутинга](../user-guide/services.md#настройка-маршрутизации) — домен, подпапка, порт
+- [Примеры](../examples.md) — готовые конфиги для разных типов сервисов
