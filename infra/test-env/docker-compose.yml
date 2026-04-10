@@ -19,29 +19,16 @@ services:
       - APP_ENV=test
       - DEBUG=true
     volumes:
-      # Монтируем проект внутрь контейнера
+      # Монтируем проект
       - ../../:/projects/apps-service-opus
-      # DinD docker socket
-      - dind-docker:/var/run/docker.sock
-    command: >
-      sh -c "
-        # Симлинки для имитации production структуры /apps
-        ln -sf /projects/apps-service-opus/_core /apps/_core 2>/dev/null;
-        ln -sf /projects/apps-service-opus/services /apps/services 2>/dev/null;
-        ln -sf /projects/apps-service-opus/backups /apps/backups 2>/dev/null;
-        ln -sf /projects/apps-service-opus/.ops-config.yml /apps/.ops-config.yml 2>/dev/null;
-        ln -sf /projects/apps-service-opus/.ops-config.local.yml /apps/.ops-config.local.yml 2>/dev/null;
-        ln -sf /projects/apps-service-opus/install.sh /apps/install.sh 2>/dev/null;
-        ln -sf /projects/apps-service-opus/restart_core.sh /apps/restart_core.sh 2>/dev/null;
-        dockerd &
-        sleep 3 &&
-        tail -f /dev/null
-      "
+      # Хостовый Docker (вместо DinD — DinD нестабилен на некоторых хостах)
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Entrypoint только настраивает симлинки
+    entrypoint: ["/entrypoint-simple.sh"]
     networks:
       - test_isolated
 
-volumes:
-  dind-docker:
+volumes: {}
 
 networks:
   test_isolated:
