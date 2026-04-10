@@ -145,15 +145,16 @@ backup:
 
 ## Roadmap
 
-- [ ] **LogManager** — интеграция с Docker API для сбора логов (сейчас заглушка)
-- [ ] **Restic upload** — написать скрипты бэкапа в Restic (сейчас только rsync/pg_dump локально)
-- [ ] **Детальная страница сервиса** в UI (сейчас редирект на список)
-- [ ] **Backup restore/delete** в UI (сейчас кнопки — заглушки)
-- [ ] **Login endpoint** в API (сейчас аутентификация только через внешний Keycloak или прямой SQLite access)
-- [ ] **`_deploy_static`** — обработчик для `type: static` (тип объявлен в enum, но не реализован)
-- [ ] **`external` service type** — обработчик (тип объявлен в enum, но не реализован)
-- [ ] **Loki/Prometheus** — мониторинг (директории `monitoring/` нет)
-- [ ] **Alembic** — миграции БД (сейчас `create_all()` при старте)
+Полный бэклог и текущий статус задач — в [GitHub Projects](https://github.com/orgs/urfu-online/projects/5).
+
+| # | Задача | Статус |
+|---|--------|--------|
+| 1–2 | Баги: deployments.py, docker_manager.py | [→ #13](https://github.com/urfu-online/apps-service/issues/13), [→ #14](https://github.com/urfu-online/apps-service/issues/14) |
+| 3 | Login endpoint в API | [→ #16](https://github.com/urfu-online/apps-service/issues/16) |
+| 4–7 | LogManager, Restic, UI stubs | [→ #17](https://github.com/urfu-online/apps-service/issues/17) – [#20](https://github.com/urfu-online/apps-service/issues/20) |
+| 8–10 | Alembic, monitoring, types | [→ #21](https://github.com/urfu-online/apps-service/issues/21) – [#22](https://github.com/urfu-online/apps-service/issues/22) |
+
+Подробное описание каждой задачи — в [docs/plan/](docs/plan/).
 
 ## Тестирование
 
