@@ -139,4 +139,9 @@ _core/platform-cli/venv/
 _core/platform-cli/dist/
 _core/platform-cli/build/
 _core/platform-cli/*.egg-info
+
+# MkDocs build output
+site/
+
+# Legacy / generated artifacts
 .legacy/

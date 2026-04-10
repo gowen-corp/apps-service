@@ -207,7 +207,6 @@ apps/
 │   │   ├── docker-compose.yml
 │   │   ├── pyproject.toml       # Зависимости (Poetry)
 │   │   └── master.db            # SQLite БД
-│   ├── monitoring/              # Prometheus + Grafana (опционально)
 ├── services/                    # Основная директория сервисов
 │   ├── public/                  # Публичные сервисы (доступны извне)
 │   └── internal/                # Внутренние сервисы (только в сети)
@@ -233,12 +232,11 @@ install.sh                       # Скрипт установки
 | Frontend      | NiceGUI                            |
 | Proxy         | Caddy (with API)                   |
 | Auth          | Keycloak (OAuth2)                  |
-| Backup        | Restic + Cron                      |
+| Backup        | Restic (частично: rsync, pg_dump работают; upload в Restic — нет) |
 | Orchestration | Docker + Docker Compose            |
 | DB            | SQLite (master.db)                 |
 | Templating    | Jinja2                             |
-| Monitoring    | Prometheus + Grafana (опционально) |
-| Logging       | Loki (в `apps/_core/logs/loki`)    |
+| Logging       | Docker API (контейнеры); Loki — не реализован |
 
 ## 7. Масштабируемость и отказоустойчивость
 
@@ -255,37 +253,15 @@ install.sh                       # Скрипт установки
 - **Восстановление**: автоматическое восстановление из бэкапа при сбое
 - **Уведомления**: Telegram-бот информирует о сбоях
 
-## 8. Управление сервисами через CLI и UI
+## 8. Управление
 
-Платформа предоставляет удобный CLI-интерфейс `ops` для управления сервисами, а также интеграцию с `lazydocker` для визуального мониторинга.
-
-### CLI-утилита `ops`
-
-Утилита `ops` устанавливается скриптом `install.sh` и позволяет:
-
-- Просматривать список сервисов: `ops list`
-- Запускать и останавливать: `ops up master`, `ops down caddy`
-- Просматривать логи: `ops logs nginx`
-- Перезагружать Caddy: `ops reload`
-
-Более подробно — см. [Setup Guide](../setup.md).
-
-### Визуальный мониторинг с `lazydocker`
-
-Для удобного просмотра состояния контейнеров, логов и метрик используется `lazydocker` ` TUI-оболочка для Docker.
-
-Используйте:
+CLI — `platform` (Python/Typer). Веб — NiceGUI на порту 8001.
 
 ```bash
-ops ui          # открыть lazydocker для всех сервисов
-ops ui master   # только для master
+platform list            # сервисы со статусом
+platform deploy my-app   # деплой
+platform logs my-app     # логи
+platform status          # статус + метрики
 ```
 
-`lazydocker` отображает:
-
-- Состояние контейнеров
-- Использование CPU/RAM
-- Логи в реальном времени
-- Возможность рестарта/удаления
-
-Интеграция настроена автоматически при наличии `lazydocker` в системе.
+Подробнее — [CLI и UI](getting-started/cli-ui.md).
