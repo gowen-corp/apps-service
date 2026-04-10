@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  hello-web:
+    image: hashicorp/http-echo
+    container_name: hello-web
+    command: ["-text", "Hello from test environment!", "-listen", ":80"]
+    ports:
+      - "9080:80"
+    networks:
+      - platform_network
+
+networks:
+  platform_network:
+    external: true
+    name: platform_network

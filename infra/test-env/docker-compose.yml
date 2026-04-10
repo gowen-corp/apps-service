@@ -1,0 +1,49 @@
+# Isolated test environment (DinD — Docker-in-Docker)
+# Симулирует production сервер в изолированном контейнере
+#
+# Использование:
+#   cd infra/test-env
+#   docker compose up -d
+#   docker compose exec test-env bash
+#   ./test_full_cycle.sh
+#   docker compose down -v
+
+services:
+  test-env:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: platform-test-env
+    privileged: true  # Required for Docker-in-Docker
+    environment:
+      - APP_ENV=test
+      - DEBUG=true
+    volumes:
+      # Монтируем проект внутрь контейнера
+      - ../../:/projects/apps-service-opus
+      # DinD docker socket
+      - dind-docker:/var/run/docker.sock
+    command: >
+      sh -c "
+        # Симлинки для имитации production структуры /apps
+        ln -sf /projects/apps-service-opus/_core /apps/_core 2>/dev/null;
+        ln -sf /projects/apps-service-opus/services /apps/services 2>/dev/null;
+        ln -sf /projects/apps-service-opus/backups /apps/backups 2>/dev/null;
+        ln -sf /projects/apps-service-opus/.ops-config.yml /apps/.ops-config.yml 2>/dev/null;
+        ln -sf /projects/apps-service-opus/.ops-config.local.yml /apps/.ops-config.local.yml 2>/dev/null;
+        ln -sf /projects/apps-service-opus/install.sh /apps/install.sh 2>/dev/null;
+        ln -sf /projects/apps-service-opus/restart_core.sh /apps/restart_core.sh 2>/dev/null;
+        dockerd &
+        sleep 3 &&
+        tail -f /dev/null
+      "
+    networks:
+      - test_isolated
+
+volumes:
+  dind-docker:
+
+networks:
+  test_isolated:
+    driver: bridge
+    name: platform_test_isolated

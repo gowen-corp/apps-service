@@ -1,0 +1,6 @@
+# Docker не должен сканировать эти директории при билде
+_core/caddy/data/
+_core/caddy/config/
+_core/backup/restic-cache/
+*.pyc
+__pycache__/

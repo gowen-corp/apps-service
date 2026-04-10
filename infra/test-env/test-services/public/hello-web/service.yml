@@ -1,0 +1,21 @@
+name: hello-web
+display_name: Hello Web
+version: "1.0.0"
+description: Minimal test web service for full-cycle testing
+type: docker-compose
+visibility: public
+routing:
+  - type: domain
+    domain: hello.test.local
+    internal_port: 80
+    strip_prefix: true
+health:
+  enabled: true
+  endpoint: /
+  interval: 15s
+  timeout: 5s
+  retries: 3
+backup:
+  enabled: false
+tags:
+  - test
