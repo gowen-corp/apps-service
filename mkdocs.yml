@@ -75,9 +75,11 @@ nav:
       - user-guide/backup.md
       - user-guide/monitoring.md
   - Разработчикам:
-      - development/guide.md
+      - development/index.md
       - development/workflow.md
+      - development/master-service.md
       - development/testing.md
+      - development/guides-wishlist.md
   - Справочник:
       - architecture.md
       - api.md

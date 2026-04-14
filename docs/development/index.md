@@ -3,7 +3,11 @@
 ## Процесс работы
 
 - [Работа с задачами](workflow.md) — как создавать, вести и закрывать задачи
-- [Slash-команда `/sync-issues`](.qwen/commands/sync-issues.md) — синхронизация GitHub Issues с docs/plan/
+
+## Гайды по подсистемам
+
+- [Master Service](master-service.md) — FastAPI + NiceGUI, структура, Docker, тесты
+- [Список всех гайдов](guides-wishlist.md) — что есть, что нужно написать
 
 ## Ссылки
 
