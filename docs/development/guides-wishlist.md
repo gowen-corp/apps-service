@@ -1,0 +1,48 @@
+# Списки гайдов для разработчика
+
+## Стандартные (для всей команды)
+
+- [x] [Работа с задачами](workflow.md) — жизненный цикл issues, бранчи, статусы
+- [ ] Локальная разработка — как развернуть проект, первый запуск
+- [ ] Git workflow — ветки, коммиты, PR, code review
+- [ ] Тестирование — как писать тесты, запуск, CI
+- [ ] Зависимости — как добавлять, обновлять, Poetry
+
+## По подсистемам
+
+### Master Service (`_core/master/`)
+- [x] [Master Service — руководство](master-service.md) — структура, Docker, тесты, API, БД
+- [ ] Добавление нового API endpoint
+- [ ] Добавление нового сервиса (discovery, caddy_manager, docker_manager)
+- [ ] NiceGUI — как добавлять страницы и компоненты
+- [ ] Аутентификация — Keycloak vs Builtin, как работает
+
+### Caddy (`_core/caddy/`)
+- [ ] Структура Caddy конфигов — Caddyfile, snippets, templates
+- [ ] Как работает CaddyManager — генерация, reload
+- [ ] Добавление нового типа роутинга (domain/subfolder/port)
+- [ ] Jinja2 шаблоны — как редактировать
+
+### Platform CLI (`_core/platform-cli/`)
+- [ ] Архитектура CLI — Typer, команды
+- [ ] Добавление новой команды
+- [ ] Установка и упаковка (pipx, hatchling)
+
+### Сервисы (`services/`)
+- [ ] Формат service.yml — поля, валидация
+- [ ] Создание нового сервиса — пошагово
+- [ ] Local override (service.local.yml) — как работает
+
+### Backup (`_core/backup/`)
+- [ ] Архитектура бэкапов — BackupManager, rsync, pg_dump
+- [ ] Настройка Restic — репозиторий, расписание, ротация
+
+### Тестирование
+- [x] [Тестирование](testing.md) — 3 уровня, DinD, mocks
+- [ ] Как добавить тест для нового сервиса
+- [ ] Integration tests — фикстуры, моки
+
+### Инфраструктура
+- [ ] DinD test-env (`infra/test-env/`) — как работает, когда использовать
+- [ ] Установка (`install.sh`) — что делает, кастомизация
+- [ ] restart_core.sh — что перезапускает, --build

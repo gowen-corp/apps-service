@@ -14,7 +14,7 @@
 
 ## Разработчику
 
-- [Руководство](development/guide.md) — Poetry, Docker, Makefile
+- [Руководство](development/master-service.md) — Master Service: Poetry, Docker, тесты
 - [Тестирование](development/testing.md) — 3 уровня, mocks, DinD
 
 ## Справочник
