@@ -75,7 +75,8 @@ nav:
       - user-guide/backup.md
       - user-guide/monitoring.md
   - Разработчикам:
-      - development.md
+      - development/guide.md
+      - development/workflow.md
       - development/testing.md
   - Справочник:
       - architecture.md

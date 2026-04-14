@@ -14,7 +14,7 @@
 
 ## Разработчику
 
-- [Руководство](development.md) — Poetry, Docker, Makefile
+- [Руководство](development/guide.md) — Poetry, Docker, Makefile
 - [Тестирование](development/testing.md) — 3 уровня, mocks, DinD
 
 ## Справочник
