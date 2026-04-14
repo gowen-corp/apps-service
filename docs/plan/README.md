@@ -13,6 +13,12 @@
 | 9 | Миграции БД (Alembic) | 🟠 Средний | ⬜ | [→](9-alembic-migrations.md) |
 | 10 | Loki / Prometheus / Grafana | ⚪ Отложить | ⬜ | [→](10-monitoring-stack.md) |
 | 11 | Caddy integration — аудит, тестирование, документация, валидация | 🔴 Критично | ⬜ | [→](11-caddy-integration-audit.md) |
+| 11a | Аудит кода Caddy integration | 🔴 Критично | ⬜ | [→ #25](https://github.com/urfu-online/apps-service/issues/25) |
+| 11b | Аудит реальных сервисов на сервере | 🟠 Средний | ⬜ | [→ #26](https://github.com/urfu-online/apps-service/issues/26) |
+| 11c | Тестирование всех сценариев Caddy routing | 🔴 Критично | ⬜ | [→ #27](https://github.com/urfu-online/apps-service/issues/27) |
+| 11d | Валидация конфигурации routing | 🟠 Средний | ⬜ | [→ #28](https://github.com/urfu-online/apps-service/issues/28) |
+| 11e | Обновить документацию — container_name | 🟡 Низкий | ⬜ | [→ #29](https://github.com/urfu-online/apps-service/issues/29) |
+| 11f | Ограничить legacy-режим проксирования | 🟠 Средний | ⬜ | [→ #30](https://github.com/urfu-online/apps-service/issues/30) |
 
 ## Структура
 
