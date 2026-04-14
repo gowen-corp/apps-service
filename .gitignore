@@ -124,6 +124,7 @@ _core/caddy/conf.d/
 _core/caddy/data/
 QWEN.md
 .qwen/PROJECT_SUMMARY.md
+.qwen/settings.json
 services/*
 
 # Local service overrides (для разработки — не коммитятся)

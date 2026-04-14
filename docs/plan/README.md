@@ -12,6 +12,7 @@
 | 8 | `_deploy_static` и `external` type — не реализованы | ⚪ Отложить | ⬜ | [→](8-static-external-types.md) |
 | 9 | Миграции БД (Alembic) | 🟠 Средний | ⬜ | [→](9-alembic-migrations.md) |
 | 10 | Loki / Prometheus / Grafana | ⚪ Отложить | ⬜ | [→](10-monitoring-stack.md) |
+| 11 | Caddy integration — аудит, тестирование, документация, валидация | 🔴 Критично | ⬜ | [→](11-caddy-integration-audit.md) |
 
 ## Структура
 
