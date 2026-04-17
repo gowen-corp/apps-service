@@ -30,28 +30,38 @@ check_directory() {
 
 create_backups() {
     log "Creating backups..."
+    
+    # Stop master temporarily for consistent backup
     log "Stopping master service..."
     docker compose $COMPOSE_ARGS -f "$PROJECT_ROOT/_core/master/docker-compose.yml" down || warn "Failed to stop master service"
 
+    # Backup database
     DB_PATH="$PROJECT_ROOT/_core/master/master.db"
     if [[ -f "$DB_PATH" ]]; then
         BACKUP_DB_NAME="/tmp/master.db.backup.$(date +%Y%m%d_%H%M%S)"
         log "Backing up database to $BACKUP_DB_NAME..."
-        cp "$DB_PATH" "$BACKUP_DB_NAME"
+        cp "$DB_PATH" "$BACKUP_DB_NAME" || warn "Failed to backup master.db"
     else
         warn "Database file not found at $DB_PATH, skipping backup"
     fi
 
+    # Backup services (исключаем директории, требующие root)
     SERVICES_BACKUP="/tmp/services-backup.$(date +%Y%m%d_%H%M%S).tgz"
     log "Backing up services to $SERVICES_BACKUP..."
-    tar czf "$SERVICES_BACKUP" -C "$PROJECT_ROOT" services/
+    tar --exclude='*/postgres/data' \
+        --exclude='*/node_modules' \
+        --exclude='*/.git' \
+        --exclude='*/__pycache__' \
+        czf "$SERVICES_BACKUP" services/ 2>/dev/null || warn "tar finished with warnings (some dirs skipped)"
 
+    # Backup Caddy configuration
     CADDY_BACKUP="/tmp/caddy-backup.$(date +%Y%m%d_%H%M%S).tgz"
     log "Backing up Caddy config to $CADDY_BACKUP..."
-    tar czf "$CADDY_BACKUP" -C "$PROJECT_ROOT" _core/caddy/
+    tar czf "$CADDY_BACKUP" -C "$PROJECT_ROOT" _core/caddy/ 2>/dev/null || warn "Caddy backup warning"
 
     log "Verifying backup files..."
     ls -lh /tmp/*.backup.* /tmp/*.tgz 2>/dev/null || true
+
     log "Restarting master service..."
     "$PROJECT_ROOT/restart_core.sh" || error "Failed to restart core services"
 }
