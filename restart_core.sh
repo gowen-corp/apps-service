@@ -1,4 +1,16 @@
 #!/bin/bash
+set -euo pipefail
+
+# Определение абсолютных путей
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="$PROJECT_ROOT/.env"
+
+# Проверка существования .env файла
+if [ ! -f "$ENV_FILE" ]; then
+    echo "❌ Ошибка: файл .env не найден в $ENV_FILE"
+    echo "Создайте файл .env на основе .env.example"
+    exit 1
+fi
 
 # Функция для отображения справки
 usage() {
@@ -30,16 +42,16 @@ done
 
 # Рестарт master-сервисов
 echo "Останавливаю master-сервис..."
-docker compose -f _core/master/docker-compose.yml down
+docker compose --env-file "$ENV_FILE" -f "$PROJECT_ROOT/_core/master/docker-compose.yml" down
 
 echo "Запускаю master-сервис..."
-docker compose -f _core/master/docker-compose.yml up -d $BUILD_FLAG
+docker compose --env-file "$ENV_FILE" -f "$PROJECT_ROOT/_core/master/docker-compose.yml" up -d $BUILD_FLAG
 
 # Рестарт Caddy
 echo "Останавливаю Caddy..."
-docker compose -f _core/caddy/docker-compose.yml down
+docker compose --env-file "$ENV_FILE" -f "$PROJECT_ROOT/_core/caddy/docker-compose.yml" down
 
 echo "Запускаю Caddy..."
-docker compose -f _core/caddy/docker-compose.yml up -d $BUILD_FLAG
+docker compose --env-file "$ENV_FILE" -f "$PROJECT_ROOT/_core/caddy/docker-compose.yml" up -d $BUILD_FLAG
 
 echo "✅ Обновление завершено."

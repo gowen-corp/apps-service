@@ -4,7 +4,18 @@
 # Based on the deployment runbook
 # Execute this script in the /apps folder on production
 
-set -e  # Exit on any error
+set -euo pipefail  # Exit on any error
+
+# Определение абсолютных путей
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="$PROJECT_ROOT/.env"
+
+# Проверка существования .env файла
+if [ ! -f "$ENV_FILE" ]; then
+    echo "❌ Ошибка: файл .env не найден в $ENV_FILE"
+    echo "Создайте файл .env на основе .env.example"
+    exit 1
+fi
 
 # Color codes for output formatting
 RED='\033[0;31m'
@@ -39,7 +50,7 @@ create_backups() {
     
     # Stop master temporarily for consistent backup
     log "Stopping master service..."
-    docker compose -f _core/master/docker-compose.yml down || warn "Failed to stop master service"
+    docker compose --env-file "$ENV_FILE" -f "$PROJECT_ROOT/_core/master/docker-compose.yml" down || warn "Failed to stop master service"
     
     # Backup database
     DB_PATH="_core/master/master.db"
