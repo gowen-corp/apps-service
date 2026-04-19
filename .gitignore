@@ -1,7 +1,11 @@
+# Poetry
+/.venv
+/poetry.lock
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-*$py.class
+*.class
 
 # C extensions
 *.so
@@ -20,11 +24,9 @@ parts/
 sdist/
 var/
 wheels/
-share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
 
 # PyInstaller
 *.manifest
@@ -44,7 +46,6 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *.cover
-*.py,cover
 .hypothesis/
 .pytest_cache/
 
@@ -69,7 +70,6 @@ instance/
 docs/_build/
 
 # PyBuilder
-.pybuilder/
 target/
 
 # Jupyter Notebook
@@ -80,17 +80,10 @@ profile_default/
 ipython_config.py
 
 # pyenv
-.python-version
+# .python-version
 
-# pipenv
-Pipfile.lock
-
-# PEP 582
-__pypackages__/
-
-# Celery stuff
+# celery beat schedule file
 celerybeat-schedule
-celerybeat.pid
 
 # SageMath parsed files
 *.sage.py
@@ -122,24 +115,79 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# pytype static type analyzer
-.pytype/
+.codeassistantmodes
+_core/master/master.db
+_core/caddy/config/
+_core/caddy/conf.d/
+_core/caddy/data/
+QWEN.md
+services/*
 
-# Cython debug symbols
-cython_debug/
+# Local service overrides (для разработки — не коммитятся)
+services/**/*.local.yml
 
-# IDE
-.vscode/
+# Local ops config override (для разработки — не коммитится)
+.ops-config.local.yml
+
+# Platform CLI - изолированный проект
+_core/platform-cli/.venv/
+_core/platform-cli/venv/
+_core/platform-cli/dist/
+_core/platform-cli/build/
+_core/platform-cli/*.egg-info
+
+# MkDocs build output
+site/
+
+# Legacy / generated artifacts
+.legacy/
+
+# Qwen settings and temporary files
+.qwen/
+*.qwen_temp*
+
+# Specific .qwen files to ignore if they were previously committed
+.qwen/settings.json
+.qwen/settings.json.orig
+
+# Environment and secrets files
+secrets/
+*.env.local
+*.env.production
+*.env.development
+*.env.test
+config/secrets.yml
+credentials.json
+.key
+.pem
+.p12
+.jks
+.store
+
+# Application-specific sensitive files
+*.session
+*.log.encrypted
+passwords.txt
+accounts.json
+keys.json
+
+# Core dumps and crash files (security risk if sensitive data is present)
+*.core
+*.dmp
+
+# IDE security files
+.vscode/settings.json
 .idea/
 *.swp
 *.swo
-*~
 
-# OS
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
-
-# Project specific
-*.log
-.tmp
-.temp
+qwen-code-export-2026-04-15T17-14-53-274Z.md
+_core/caddy.backup.*/
