@@ -3,7 +3,7 @@
 """
 import os
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 # Импортируем функции для тестирования
 from apps_platform.cli import (
