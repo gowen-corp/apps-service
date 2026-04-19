@@ -444,7 +444,6 @@ def backup(service: str = typer.Argument(..., help="Имя сервиса")):
         if response.status_code == 200:
             result = response.json()
             console.print(f"[green]✅ Бэкап создан: {result.get('name', 'N/A')}[/green]")
-            raise typer.Exit(0)
         else:
             console.print(f"[red]❌ API вернул статус {response.status_code}[/red]")
             raise typer.Exit(1)
@@ -482,6 +481,29 @@ def reload(
     container: str = typer.Option("caddy", "--container", "-c", help="Имя контейнера Caddy"),
 ):
     """Перезагрузить конфигурацию Caddy."""
+    # Валидация имени контейнера
+    if not container or not container.replace("-", "").replace("_", "").isalnum():
+        console.print("[red]❌ Неверное имя контейнера[/red]")
+        raise typer.Exit(1)
+    
+    # Проверка существования контейнера
+    try:
+        check_result = subprocess.run(
+            ["docker", "ps", "--format", "{{.Names}}"],
+            capture_output=True, text=True, check=True
+        )
+        running_containers = check_result.stdout.strip().split('\n')
+        if container not in running_containers:
+            console.print(f"[red]❌ Контейнер '{container}' не найден или не запущен[/red]")
+            console.print("[yellow]Доступные контейнеры:[/yellow]")
+            for c in running_containers:
+                if c:
+                    console.print(f"  - {c}")
+            raise typer.Exit(1)
+    except subprocess.CalledProcessError:
+        console.print("[red]❌ Ошибка проверки контейнеров Docker[/red]")
+        raise typer.Exit(1)
+    
     console.print(f"[blue]ℹ️  Перезагрузка Caddy в контейнере '{container}'...[/blue]")
     try:
         result = subprocess.run(
